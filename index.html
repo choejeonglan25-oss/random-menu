@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오늘 뭐 먹지? | 랜덤 메뉴 & 맛집 추천</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #a1c4fd 100%);
+      padding: 24px 16px;
+      color: #333;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-radius: 28px;
+      padding: 40px 28px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      transition: transform 0.2s ease;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #2d3748;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: #718096;
+      margin-bottom: 22px;
+    }
+
+    /* 카테고리 탭 선택 바 */
+    .category-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: #edf2f7;
+      padding: 5px;
+      border-radius: 16px;
+      margin-bottom: 22px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      padding: 10px 4px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #718096;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      user-select: none;
+    }
+
+    .tab-btn:hover {
+      color: #2d3748;
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: #ff5252;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 결과 디스플레이 영역 */
+    .result-container {
+      background: #f7fafc;
+      border: 2px dashed #cbd5e0;
+      border-radius: 20px;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 22px 18px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .result-container.active {
+      border-color: #ff6b6b;
+      background: #fff5f5;
+      transform: scale(1.01);
+      box-shadow: 0 10px 25px rgba(255, 107, 107, 0.12);
+    }
+
+    .emoji {
+      font-size: 3.8rem;
+      line-height: 1.1;
+      margin-bottom: 8px;
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .category-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #e53e3e;
+      background: #ffe3e3;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .menu-name {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #1a202c;
+      word-break: keep-all;
+      margin-bottom: 12px;
+    }
+
+    /* 맛집 추천 박스 */
+    .restaurant-box {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 12px 14px;
+      width: 100%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      border: 1px solid #fed7d7;
+      margin-top: 4px;
+    }
+
+    .restaurant-header {
+      font-size: 0.82rem;
+      color: #e53e3e;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+
+    .restaurant-names {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #2d3748;
+      line-height: 1.4;
+      word-break: keep-all;
+      margin-bottom: 10px;
+    }
+
+    /* 지도 바로가기 버튼 그룹 */
+    .map-links {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .map-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .map-btn-naver {
+      background-color: #03c75a;
+      color: #ffffff;
+    }
+
+    .map-btn-naver:hover {
+      background-color: #02b150;
+      transform: translateY(-1px);
+    }
+
+    .map-btn-kakao {
+      background-color: #fee500;
+      color: #191919;
+    }
+
+    .map-btn-kakao:hover {
+      background-color: #fada0a;
+      transform: translateY(-1px);
+    }
+
+    .placeholder-text {
+      color: #a0aec0;
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .placeholder-icon {
+      font-size: 3rem;
+      opacity: 0.75;
+    }
+
+    /* 추천 버튼 */
+    .btn-recommend {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+      color: #fff;
+      border: none;
+      font-size: 1.15rem;
+      font-weight: 700;
+      padding: 16px 36px;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(255, 107, 107, 0.35);
+      transition: all 0.2s ease;
+      width: 100%;
+      outline: none;
+    }
+
+    .btn-recommend:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 24px rgba(255, 107, 107, 0.45);
+    }
+
+    .btn-recommend:active {
+      transform: translateY(1px);
+      box-shadow: 0 6px 12px rgba(255, 107, 107, 0.3);
+    }
+
+    .btn-recommend:disabled {
+      background: #cbd5e0;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 통통 튀는 애니메이션 */
+    .pop {
+      animation: popAnim 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popAnim {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* 축하 색종이 효과 */
+    canvas#confetti {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+
+  <main class="card">
+    <h1>오늘 뭐 먹지?</h1>
+    <p class="subtitle">선택 장애는 이제 그만! 오늘의 한 끼와 맛집을 정해드려요.</p>
+
+    <!-- 카테고리 선택 탭 -->
+    <div class="category-tabs" role="tablist">
+      <button class="tab-btn active" data-category="전체">
+        <span>✨</span> 전체
+      </button>
+      <button class="tab-btn" data-category="한식">
+        <span>🍚</span> 한식
+      </button>
+      <button class="tab-btn" data-category="일식">
+        <span>🍣</span> 일식
+      </button>
+      <button class="tab-btn" data-category="중식">
+        <span>🥟</span> 중식
+      </button>
+    </div>
+
+    <!-- 결과 영역 -->
+    <div class="result-container" id="resultContainer">
+      <div id="placeholder" class="placeholder-text">
+        <span class="placeholder-icon" id="placeholderIcon">🍽️</span>
+        <span id="placeholderLabel">카테고리를 고르고 추천 버튼을 눌러보세요!</span>
+      </div>
+
+      <div id="content" style="display: none; width: 100%;">
+        <span class="category-badge" id="categoryBadge">한식</span>
+        <div class="emoji" id="menuEmoji">🥘</div>
+        <div class="menu-name" id="menuName">김치찌개</div>
+
+        <!-- 맛집 추천 정보 -->
+        <div class="restaurant-box" id="restaurantBox">
+          <div class="restaurant-header">
+            <span>📍</span> 대표 추천 맛집
+          </div>
+          <div class="restaurant-names" id="restaurantNames">은주정, 굴다리식당, 광화문집</div>
+          
+          <!-- 지도 바로가기 버튼 -->
+          <div class="map-links">
+            <a href="#" target="_blank" rel="noopener noreferrer" class="map-btn map-btn-naver" id="naverMapLink">
+              <span>네이버 지도</span> ↗
+            </a>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="map-btn map-btn-kakao" id="kakaoMapLink">
+              <span>카카오맵</span> ↗
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button id="btnRecommend" class="btn-recommend">메뉴 추천하기</button>
+  </main>
+
+  <script>
+    // 메뉴 및 대표 맛집 데이터베이스
+    const menuList = [
+      // 🍚 한식
+      { 
+        name: "김치찌개", 
+        emoji: "🥘", 
+        category: "한식",
+        restaurants: "은주정, 굴다리식당, 광화문집, 새마을식당"
+      },
+      { 
+        name: "된장찌개", 
+        emoji: "🍲", 
+        category: "한식",
+        restaurants: "또순이네, 토속정, 진주회관, 시골집"
+      },
+      { 
+        name: "제육볶음", 
+        emoji: "🥩", 
+        category: "한식",
+        restaurants: "별미식당, 일미식당, 마포 옥포집, 시골밥상"
+      },
+      { 
+        name: "비빔밥", 
+        emoji: "🥗", 
+        category: "한식",
+        restaurants: "전주 한국집, 목멱산방, 고궁, 정일품"
+      },
+      { 
+        name: "삼겹살", 
+        emoji: "🥓", 
+        category: "한식",
+        restaurants: "금돼지식당, 숙달돼지, 맛찬들왕소금구이, 하남돼지집"
+      },
+      { 
+        name: "소고기 국밥", 
+        emoji: "🥣", 
+        category: "한식",
+        restaurants: "하동관, 대구 따로국밥, 옥동식, 백암식당"
+      },
+      { 
+        name: "닭볶음탕", 
+        emoji: "🍗", 
+        category: "한식",
+        restaurants: "종로 계림원조식당, 염창동 유림, 충정로 호수집"
+      },
+      { 
+        name: "순두부찌개", 
+        emoji: "🍲", 
+        category: "한식",
+        restaurants: "강릉 초당순두부, 소공동뚝배기, 청국장과보리밥"
+      },
+      { 
+        name: "칼국수", 
+        emoji: "🍜", 
+        category: "한식",
+        restaurants: "명동교자, 종로 찬양집, 전주 베테랑칼국수, 대선칼국수"
+      },
+      { 
+        name: "소불고기", 
+        emoji: "🥩", 
+        category: "한식",
+        restaurants: "우래옥, 한일관, 옛맛서울불고기, 사리원"
+      },
+      { 
+        name: "설렁탕", 
+        emoji: "🥣", 
+        category: "한식",
+        restaurants: "이문설농탕, 명동 영춘옥, 대성집, 신선설농탕"
+      },
+      { 
+        name: "보쌈 & 족발", 
+        emoji: "🍖", 
+        category: "한식",
+        restaurants: "만족오향족발, 영동족발, 원할머니보쌈, 족발당수"
+      },
+      { 
+        name: "갈비탕", 
+        emoji: "🍲", 
+        category: "한식",
+        restaurants: "버드나무집, 송추가마골, 본수원갈비, 버드나무식당"
+      },
+      { 
+        name: "닭갈비", 
+        emoji: "🍗", 
+        category: "한식",
+        restaurants: "춘천 통나무집, 유가네닭갈비, 홍대 신미경닭갈비"
+      },
+      { 
+        name: "감자탕 / 뼈해장국", 
+        emoji: "🍲", 
+        category: "한식",
+        restaurants: "성수동 소문난감자탕, 용산 일미집, 참이맛감자탕"
+      },
+      { 
+        name: "돌솥 비빔밥", 
+        emoji: "🍚", 
+        category: "한식",
+        restaurants: "전주중앙회관, 오복정, 본비빔밥"
+      },
+      
+      // 🍣 일식
+      { 
+        name: "돈까스", 
+        emoji: "🍱", 
+        category: "일식",
+        restaurants: "대학로 정돈, 연돈, 크레이지카츠, 카와카츠"
+      },
+      { 
+        name: "초밥 (스시)", 
+        emoji: "🍣", 
+        category: "일식",
+        restaurants: "은행골, 스시소라, 상무초밥, 스시로"
+      },
+      { 
+        name: "돈코츠 라멘", 
+        emoji: "🍜", 
+        category: "일식",
+        restaurants: "합정 오레노라멘, 세상끝의라멘, 멘야하나비, 아오리라멘"
+      },
+      { 
+        name: "연어 덮밥 (사케동)", 
+        emoji: "🍣", 
+        category: "일식",
+        restaurants: "홍대돈부리, 온기정, 긴자료코, 지라시스시"
+      },
+      { 
+        name: "카츠동 (돈까스 덮밥)", 
+        emoji: "🍚", 
+        category: "일식",
+        restaurants: "긴자료코, 카츠단뽀뽀, 홍대돈부리"
+      },
+      { 
+        name: "텐동 (튀김 덮밥)", 
+        emoji: "🍤", 
+        category: "일식",
+        restaurants: "망원 이치젠, 온센텐동, 저스트텐동, 고쿠텐"
+      },
+      { 
+        name: "우동 & 어묵", 
+        emoji: "🍲", 
+        category: "일식",
+        restaurants: "합정 교다이야, 겐로쿠우동, 역전우동"
+      },
+      { 
+        name: "일본식 카레", 
+        emoji: "🍛", 
+        category: "일식",
+        restaurants: "아비꼬, 코코이찌방야, 카레공방, 모나미카레"
+      },
+      { 
+        name: "규동 (소고기 덮밥)", 
+        emoji: "🍚", 
+        category: "일식",
+        restaurants: "샤로수길 지구당, 동경규동, 스키야"
+      },
+      { 
+        name: "냉모밀 / 메밀소바", 
+        emoji: "🥢", 
+        category: "일식",
+        restaurants: "광화문 미진, 시청 유림면, 북창동 송옥"
+      },
+      { 
+        name: "야키소바", 
+        emoji: "🍜", 
+        category: "일식",
+        restaurants: "명동 츠루하시 후게츠, 신촌 하나, 야키소바 니주마루"
+      },
+      { 
+        name: "모둠 회 & 지리탕", 
+        emoji: "🐟", 
+        category: "일식",
+        restaurants: "노량진 형제상회, 가락시장 남해수산, 어사출또"
+      },
+      
+      // 🥟 중식
+      { 
+        name: "짜장면", 
+        emoji: "🥢", 
+        category: "중식",
+        restaurants: "차이나타운 신승반점, 공화춘, 현선이네, 만다복"
+      },
+      { 
+        name: "얼큰 짬뽕", 
+        emoji: "🍜", 
+        category: "중식",
+        restaurants: "송탄 영빈루, 강릉 교동짬뽕, 홍대 초마, 일일향"
+      },
+      { 
+        name: "탕수육", 
+        emoji: "🥢", 
+        category: "중식",
+        restaurants: "논현 대가방, 방배 주(CHU), 압구정 일일향"
+      },
+      { 
+        name: "마라탕", 
+        emoji: "🌶️", 
+        category: "중식",
+        restaurants: "하이디라오, 라화쿵부, 탕화쿵푸마라탕, 피슈마라홍탕"
+      },
+      { 
+        name: "마라샹궈", 
+        emoji: "🥘", 
+        category: "중식",
+        restaurants: "하이디라오, 마라공방, 신룽푸마라탕, 라공방"
+      },
+      { 
+        name: "중화 볶음밥", 
+        emoji: "🍳", 
+        category: "중식",
+        restaurants: "차이나타운 연경, 소공동 도원, 동보성"
+      },
+      { 
+        name: "딤섬 & 샤오롱바오", 
+        emoji: "🥟", 
+        category: "중식",
+        restaurants: "딘타이펑, 팀호완, 가로수길 쮸즈, 몽중헌"
+      },
+      { 
+        name: "마파두부 덮밥", 
+        emoji: "🍛", 
+        category: "중식",
+        restaurants: "망원 진진, 명동 란주칼면, 플라자호텔 백리향"
+      },
+      { 
+        name: "깐풍기", 
+        emoji: "🍗", 
+        category: "중식",
+        restaurants: "일일향, 취영루, 메이탄"
+      },
+      { 
+        name: "꿔바로우", 
+        emoji: "🥢", 
+        category: "중식",
+        restaurants: "건대 매화반점, 라화쿵부, 경성양꼬치"
+      },
+      { 
+        name: "멘보샤", 
+        emoji: "🍤", 
+        category: "중식",
+        restaurants: "연희동 목란(이연복), 망원 진진, 연남동 하하"
+      },
+      { 
+        name: "유린기", 
+        emoji: "🥗", 
+        category: "중식",
+        restaurants: "신사 송쉐프, 연남 향미, 도곡 메이탄"
+      },
+      { 
+        name: "잡채밥", 
+        emoji: "🍚", 
+        category: "중식",
+        restaurants: "군산 복성루, 제주 아서원, 부산 동해루"
+      }
+    ];
+
+    const resultContainer = document.getElementById('resultContainer');
+    const placeholder = document.getElementById('placeholder');
+    const placeholderIcon = document.getElementById('placeholderIcon');
+    const placeholderLabel = document.getElementById('placeholderLabel');
+    const content = document.getElementById('content');
+    const menuEmoji = document.getElementById('menuEmoji');
+    const menuName = document.getElementById('menuName');
+    const categoryBadge = document.getElementById('categoryBadge');
+    const restaurantNames = document.getElementById('restaurantNames');
+    const naverMapLink = document.getElementById('naverMapLink');
+    const kakaoMapLink = document.getElementById('kakaoMapLink');
+    const btnRecommend = document.getElementById('btnRecommend');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+
+    let currentCategory = '전체';
+    let isRolling = false;
+    let lastIndex = -1;
+
+    // 카테고리 탭 클릭 이벤트
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (isRolling) return;
+        
+        tabBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentCategory = btn.getAttribute('data-category');
+
+        const categoryEmojis = {
+          '전체': '🍽️',
+          '한식': '🍚',
+          '일식': '🍣',
+          '중식': '🥟'
+        };
+
+        if (content.style.display === 'none') {
+          placeholderIcon.textContent = categoryEmojis[currentCategory];
+          placeholderLabel.textContent = currentCategory === '전체' 
+            ? '카테고리를 고르고 추천 버튼을 눌러보세요!' 
+            : `${currentCategory} 메뉴를 추천해드릴게요!`;
+        }
+      });
+    });
+
+    function getFilteredList() {
+      if (currentCategory === '전체') {
+        return menuList;
+      }
+      return menuList.filter(item => item.category === currentCategory);
+    }
+
+    function getRandomMenu() {
+      const filtered = getFilteredList();
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * filtered.length);
+      } while (nextIndex === lastIndex && filtered.length > 1);
+      
+      lastIndex = nextIndex;
+      return filtered[nextIndex];
+    }
+
+    function recommendMenu() {
+      if (isRolling) return;
+      isRolling = true;
+      btnRecommend.disabled = true;
+      btnRecommend.innerText = "메뉴와 맛집 찾는 중...";
+
+      placeholder.style.display = 'none';
+      content.style.display = 'block';
+      resultContainer.classList.add('active');
+
+      let count = 0;
+      const totalSteps = 16;
+      let delay = 50;
+
+      function roll() {
+        const item = getRandomMenu();
+        menuEmoji.textContent = item.emoji;
+        menuName.textContent = item.name;
+        categoryBadge.textContent = item.category;
+        restaurantNames.textContent = item.restaurants || "추천 맛집 준비 중";
+
+        count++;
+        if (count < totalSteps) {
+          delay += 12;
+          setTimeout(roll, delay);
+        } else {
+          finishPick(item);
+        }
+      }
+
+      roll();
+    }
+
+    function finishPick(item) {
+      isRolling = false;
+      btnRecommend.disabled = false;
+      btnRecommend.innerText = "다시 추천받기";
+
+      // 지도 검색 링크 갱신 (검색어 정리)
+      const query = item.name.split('/')[0].split('(')[0].replace('&', ' ').trim();
+      naverMapLink.href = `https://map.naver.com/p/search/${encodeURIComponent(query + ' 맛집')}`;
+      kakaoMapLink.href = `https://map.kakao.com/?q=${encodeURIComponent(query + ' 맛집')}`;
+
+      // 팝 애니메이션 적용
+      content.classList.remove('pop');
+      void content.offsetWidth;
+      content.classList.add('pop');
+
+      // 축하 컨페티 효과 발생
+      fireConfetti();
+    }
+
+    btnRecommend.addEventListener('click', recommendMenu);
+
+    // 심플하고 가벼운 캔버스 파티클(컨페티) 효과
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function fireConfetti() {
+      const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#1dd1a1', '#54a0ff'];
+      particles = [];
+      const particleCount = 45;
+
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: canvas.width / 2 + (Math.random() - 0.5) * 80,
+          y: canvas.height / 2 + 50,
+          vx: (Math.random() - 0.5) * 14,
+          vy: -(Math.random() * 10 + 6),
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 10,
+          gravity: 0.35,
+          opacity: 1
+        });
+      }
+
+      if (!animating) {
+        animating = true;
+        animateConfetti();
+      }
+    }
+
+    let animating = false;
+    function animateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.rotation += p.rotationSpeed;
+        p.opacity -= 0.015;
+
+        if (p.opacity <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.opacity;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      }
+
+      if (particles.length > 0) {
+        requestAnimationFrame(animateConfetti);
+      } else {
+        animating = false;
+      }
+    }
+  </script>
+</body>
+</html>
